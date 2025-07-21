@@ -11,7 +11,6 @@ export interface FaceRecognitionResult {
     distance: number;
     confidence: number;
     imgName: string;
-    embedding: number[];
 }
 let s3Client: any = null;
 let s3BucketName: string | null = null;
@@ -190,8 +189,7 @@ export class UserFaceController {
                             name: userFace.UserId.Name,
                             distance: distance,
                             confidence: confidence,
-                            imgName: userFace.ImgName,
-                            embedding: userFace.Embedding
+                            imgName: userFace.ImgName
                         };
                     }
                 }
