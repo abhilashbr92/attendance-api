@@ -92,6 +92,41 @@ export class UserFaceController {
         }
     }
 
+    static async recognizeFace(req: Request, res: Response): Promise<void> {
+        try {
+            const { entityId } = req.user!;
+            const { embedding } = req.body;
+            if (!embedding || !Array.isArray(embedding) || !entityId) {
+                res.status(400).json({
+                    message: 'Missing required fields: embedding and entityId'
+                });
+                return;
+            }
+            const result = await UserFaceController.findNearest(embedding, entityId);
+            if (!result) {
+                res.status(404).json({
+                    message: 'User face not found'
+                });
+                return;
+            }
+            if (s3Client === null || s3BucketName === null) {
+                await UserFaceController.initializeS3();
+            }
+            const s3ImgUrl = await UserFaceController.getImageFromS3(result.imgName);
+            console.log('S3 Image URL:', s3ImgUrl);
+            if (s3ImgUrl) {
+                result.imgName = s3ImgUrl; // Replace with base64 image
+            }
+            console.log('Recognition result:', result);
+            res.status(200).json(result);
+        } catch (error) {
+            console.error('Face recognition error:', error);
+            res.status(500).json({
+                message: 'Internal server error during face recognition'
+            });
+        }
+    }
+
     private static async initializeS3() {
         try {
             // Fetch S3 configuration from database
@@ -130,41 +165,6 @@ export class UserFaceController {
         } catch (error) {
             console.error('Error getting image from S3:', error);
             return null;
-        }
-    }
-
-    static async recognizeFace(req: Request, res: Response): Promise<void> {
-        try {
-            const { entityId } = req.user!;
-            const { embedding } = req.body;
-            if (!embedding || !Array.isArray(embedding) || !entityId) {
-                res.status(400).json({
-                    message: 'Missing required fields: embedding and entityId'
-                });
-                return;
-            }
-            const result = await UserFaceController.findNearest(embedding, entityId);
-            if (!result) {
-                res.status(404).json({
-                    message: 'User face not found'
-                });
-                return;
-            }
-            if (s3Client === null || s3BucketName === null) {
-                await UserFaceController.initializeS3();
-            }
-            const s3ImgUrl = await UserFaceController.getImageFromS3(result.imgName);
-            console.log('S3 Image URL:', s3ImgUrl);
-            if (s3ImgUrl) {
-                result.imgName = s3ImgUrl; // Replace with base64 image
-            }
-            console.log('Recognition result:', result);
-            res.status(200).json(result);
-        } catch (error) {
-            console.error('Face recognition error:', error);
-            res.status(500).json({
-                message: 'Internal server error during face recognition'
-            });
         }
     }
 
