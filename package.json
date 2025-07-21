@@ -33,6 +33,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "@aws-sdk/s3-request-presigner": "^3.848.0",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",

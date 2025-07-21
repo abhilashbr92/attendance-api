@@ -7,6 +7,7 @@ export const UserSchema = new mongoose.Schema({
     Pwd: { type: String, required: true, select: false },
     Admin: { type: Boolean, default: false },
     FaceReg: { type: Boolean, default: false },
+    Del: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const User = mongoose.model("User", UserSchema, "User");

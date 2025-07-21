@@ -9,7 +9,7 @@ export class UserController {
   static async getAllUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { entityId } = req.user!;
-      const usersList = await User.find({ EId: entityId, Admin: { $ne: true } });
+      const usersList = await User.find({ EId: entityId, Admin: { $ne: true }, Del: { $ne: true } });
       res.status(200).json(usersList);
     } catch (error) {
       next(error);
@@ -93,7 +93,7 @@ export class UserController {
       // Access decoded user info from JWT
       const { entityId } = req.user!;
       const { id } = req.params;
-      const deletedUser = await User.findOneAndDelete({ _id: id, EId: entityId });
+      const deletedUser = await User.findOneAndUpdate({ _id: id, EId: entityId }, { Del: true }, { new: true });
       if (!deletedUser) {
         res.status(404).json({
           message: 'User not found'
@@ -128,7 +128,7 @@ export class UserController {
       }
 
       // Find user by username within the entity
-      const user = await User.findOne({ UName, EId: entity._id }).select('+Pwd');
+      const user = await User.findOne({ UName, EId: entity._id }).select('+Pwd').populate('EId');
       console.log('User found:', user);
       if (!user) {
         res.status(401).json({
