@@ -25,6 +25,12 @@ export class UserFaceController {
             const { entityId } = req.user!;
             let { userId, embedding } = req.body;
             embedding = embedding.split(',').map(Number); // Convert string to array of numbers
+            if (embedding.length !== 512) {
+                res.status(400).json({
+                    message: 'Embedding must be an array of 512 numbers'
+                });
+                return;
+            }
             const file = req.file as Express.MulterS3.File;
             // Validate required fields
             if (!userId || !embedding || !file) {
@@ -144,6 +150,12 @@ export class UserFaceController {
             if (!embedding || !Array.isArray(embedding) || !entityId) {
                 res.status(400).json({
                     message: 'Missing required fields: embedding and entityId'
+                });
+                return;
+            }
+            if (embedding.length !== 512) {
+                res.status(400).json({
+                    message: 'Embedding must be an array of 512 numbers'
                 });
                 return;
             }
