@@ -5,11 +5,13 @@ import { Config } from '../models/config';
 import { S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { UserFaceLog } from '../models/userFaceLog';
 export interface FaceRecognitionResult {
     userId: string;
     name: string;
     distance: number;
     confidence: number;
+    imgUrl: string;
     imgName: string;
 }
 let s3Client: any = null;
@@ -49,6 +51,49 @@ export class UserFaceController {
             res.status(201).json(updatedUser);
         } catch (error) {
             next(error);
+        }
+    }
+
+    static async createUserFaceLog(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { entityId } = req.user!;
+            const { userId } = req.body;
+            if (!entityId || !userId) {
+                res.status(400).json({
+                    message: 'Entity ID and User ID are required'
+                });
+                return;
+            }
+            const userFace = await UserFace.findOne({ UserId: userId, EId: entityId }).populate('UserId', '_id Name').exec();
+            if (!userFace || userFace.UserId.Del) {
+                res.status(404).json({
+                    message: 'User face not found'
+                });
+                return;
+            }
+            let userFaceLog: any = {
+                EId: entityId,
+                UserId: userId,
+                FaceId: userFace._id,
+                Result: {
+                    Similarity: 0,
+                    SThreshold: 0,
+                    Liveness: 0,
+                    LThreshold: 0
+                }
+            };
+            userFaceLog = new UserFaceLog(userFaceLog);
+            const savedUserFaceLog = await userFaceLog.save();
+            res.status(200).json({
+                userId: userFace.UserId._id,
+                name: userFace.UserId.Name,
+                embedding: userFace.Embedding
+            });
+        } catch (error) {
+            console.error('Error getting user embedding:', error);
+            res.status(500).json({
+                message: 'Internal server error while fetching user embedding'
+            });
         }
     }
 
@@ -103,6 +148,7 @@ export class UserFaceController {
                 return;
             }
             const result = await UserFaceController.findNearest(embedding, entityId);
+            console.log('Recognition result:', result);
             if (!result) {
                 res.status(404).json({
                     message: 'User face not found'
@@ -113,11 +159,9 @@ export class UserFaceController {
                 await UserFaceController.initializeS3();
             }
             const s3ImgUrl = await UserFaceController.getImageFromS3(result.imgName);
-            console.log('S3 Image URL:', s3ImgUrl);
             if (s3ImgUrl) {
-                result.imgName = s3ImgUrl; // Replace with base64 image
+                result.imgUrl = s3ImgUrl; // Replace with base64 image
             }
-            console.log('Recognition result:', result);
             res.status(200).json(result);
         } catch (error) {
             console.error('Face recognition error:', error);
@@ -146,7 +190,6 @@ export class UserFaceController {
                 region: region
             });
             s3BucketName = bucketName;
-            console.log('S3 configuration loaded successfully');
         } catch (error) {
             console.error('Failed to initialize S3 configuration:', error);
             throw error;
@@ -189,7 +232,8 @@ export class UserFaceController {
                             name: userFace.UserId.Name,
                             distance: distance,
                             confidence: confidence,
-                            imgName: userFace.ImgName
+                            imgName: userFace.ImgName,
+                            imgUrl: ''
                         };
                     }
                 }
