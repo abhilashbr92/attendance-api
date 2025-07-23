@@ -236,6 +236,7 @@ export class UserFaceController {
             for (const userFace of userFaces) {
                 if (!userFace.UserId.Del) {
                     const distance = UserFaceController.calculateDistance(embedding, userFace.Embedding);
+                    console.log(`Distance for user ${userFace.UserId.Name}:`, distance);
                     if (distance < minDistance && distance < UserFaceController.RECOGNITION_THRESHOLD) {
                         minDistance = distance;
                         const confidence = Math.max(0, 1 - (distance / 2)); // Convert distance to confidence
