@@ -18,7 +18,7 @@ let s3Client: any = null;
 let s3BucketName: string | null = null;
 export class UserFaceController {
 
-    private static readonly RECOGNITION_THRESHOLD = 0.6; // Adjust based on your needs
+    private static readonly RECOGNITION_THRESHOLD = 0.8; // Adjust based on your needs
 
     static async addUserFace(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
