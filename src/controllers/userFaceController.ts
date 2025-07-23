@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { UserFace } from '../models/userFace';
 import { User } from '../models/user';
 import { Config } from '../models/config';
-import { S3Client } from '@aws-sdk/client-s3';
+import { NotFound, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { UserFaceLog } from '../models/userFaceLog';
@@ -161,20 +161,20 @@ export class UserFaceController {
             }
             const result = await UserFaceController.findNearest(embedding, entityId);
             console.log('Recognition result:', result);
-            if (!result) {
-                res.status(404).json({
-                    message: 'User face not found'
+            if (result == null) {
+                res.status(200).json({
+                    NotFound: true
                 });
-                return;
+            } else {
+                if (s3Client === null || s3BucketName === null) {
+                    await UserFaceController.initializeS3();
+                }
+                const s3ImgUrl = await UserFaceController.getImageFromS3(result.imgName);
+                if (s3ImgUrl) {
+                    result.imgUrl = s3ImgUrl; // Replace with base64 image
+                }
+                res.status(200).json(result);
             }
-            if (s3Client === null || s3BucketName === null) {
-                await UserFaceController.initializeS3();
-            }
-            const s3ImgUrl = await UserFaceController.getImageFromS3(result.imgName);
-            if (s3ImgUrl) {
-                result.imgUrl = s3ImgUrl; // Replace with base64 image
-            }
-            res.status(200).json(result);
         } catch (error) {
             console.error('Face recognition error:', error);
             res.status(500).json({
