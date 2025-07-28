@@ -31,14 +31,6 @@ export class UserFaceController {
                 });
                 return;
             }
-            const file = req.file as Express.MulterS3.File;
-            // Validate required fields
-            if (!userId || !embedding || !file) {
-                res.status(400).json({
-                    message: 'User ID, face embedding, and image file are required'
-                });
-                return;
-            }
             // Validate embedding is an array of numbers
             if (!Array.isArray(embedding) || !embedding.every(num => typeof num === 'number')) {
                 res.status(400).json({
@@ -46,15 +38,28 @@ export class UserFaceController {
                 });
                 return;
             }
-            const savedUserFace = await UserFace.findOneAndUpdate({ UserId: userId, EId: entityId }, {
-                EId: entityId,
-                UserId: userId,
-                Embedding: embedding,
-                ImgName: file.key, // S3 object key
-            }, { new: true, upsert: true });
-            // Update user's FaceReg status
-            const updatedUser = await User.findByIdAndUpdate(userId, { FaceReg: true }, { new: true });
-            res.status(201).json(updatedUser);
+            const result = await UserFaceController.findNearest(embedding, entityId);
+            console.log('Recognition result:', result);
+            if (result != null) {
+                res.status(201).json({
+                    exists: true,
+                    message: 'User face already exists',
+                    userId: result.userId,
+                    name: result.name
+                });
+                return;
+            } else {
+                const file = req.file as Express.MulterS3.File;
+                const savedUserFace = await UserFace.findOneAndUpdate({ UserId: userId, EId: entityId }, {
+                    EId: entityId,
+                    UserId: userId,
+                    Embedding: embedding,
+                    ImgName: file.key, // S3 object key
+                }, { new: true, upsert: true });
+                // Update user's FaceReg status
+                const updatedUser = await User.findByIdAndUpdate(userId, { FaceReg: true }, { new: true });
+                res.status(201).json(updatedUser);
+            }
         } catch (error) {
             next(error);
         }
