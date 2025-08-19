@@ -4,6 +4,8 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { LoginSession } from '../models/loginSession';
+import { UserFace } from '../models/userFace';
+import { UserFaceController } from './userFaceController';
 export class UserController {
 
   static async getAllUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -90,15 +92,12 @@ export class UserController {
 
   static async deleteUser(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Access decoded user info from JWT
       const { entityId } = req.user!;
       const { id } = req.params;
       const deletedUser = await User.findOneAndUpdate({ _id: id, EId: entityId }, { Del: true }, { new: true });
-      if (!deletedUser) {
-        res.status(404).json({
-          message: 'User not found'
-        });
-        return;
+      if (deletedUser.FaceReg) {
+        const userFace = await UserFace.findOneAndUpdate({ UserId: deletedUser._id }, { Del: true }, { new: true });
+        await UserFaceController.deleteFaceFromS3(userFace.ImgName);
       }
       res.status(200).json(true);
     } catch (error) {

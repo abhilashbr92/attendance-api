@@ -3,7 +3,8 @@ import multerS3 from 'multer-s3';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Request, Response, NextFunction } from 'express';
 import { Config } from '../models/config';
-
+import { v4 as uuidv4 } from 'uuid';
+const path = require('path');
 let s3Client: S3Client | null = null;
 let upload: multer.Multer | null = null;
 
@@ -35,7 +36,7 @@ async function initializeS3() {
                 bucket: bucketName,
                 key: function (req: Request, file: Express.Multer.File, cb: Function) {
                     // Generate unique filename with timestamp
-                    const fileName = `faces/${Date.now()}-${Math.round(Math.random() * 1E9)}.${file.originalname.split('.').pop()}`;
+                    const fileName = uuidv4() + path.extname(file.originalname);
                     cb(null, fileName);
                 },
                 contentType: multerS3.AUTO_CONTENT_TYPE,
