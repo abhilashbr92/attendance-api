@@ -15,6 +15,7 @@ router.post('/',
 
 // POST /api/face/recognize - Recognize face from embedding
 router.post('/recognize', authenticateAdminToken, UserFaceController.recognizeFace);
+router.get('/details/:userId', authenticateAdminToken, UserFaceController.getUserFaceDetails);
 router.post('/log', authenticateAdminToken, UserFaceController.createUserFaceLog);
 router.get('/s3face/:userId', authenticateAdminToken, UserFaceController.getUserFaceFromS3);
 

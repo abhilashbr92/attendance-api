@@ -46,7 +46,7 @@ export class UserFaceController {
 
     static async deleteFaceFromS3(imgName: string) {
         try {
-            if (s3Client === null || s3BucketName === null) {
+            if (s3Client == null || s3BucketName == null) {
                 await UserFaceController.initializeS3();
             }
             const objectsToDelete: any[] = [{ Key: imgName }];
@@ -67,7 +67,7 @@ export class UserFaceController {
 
     private static async GetImageFromS3(imgName: string): Promise<string | null> {
         try {
-            if (s3Client === null || s3BucketName === null) {
+            if (s3Client == null || s3BucketName == null) {
                 await UserFaceController.initializeS3();
             }
             const expiresIn = 15 * 60;
@@ -271,6 +271,35 @@ export class UserFaceController {
             console.error('Error getting user embedding:', error);
             res.status(500).json({
                 message: 'Internal server error while fetching user embedding'
+            });
+        }
+    }
+
+    static async getUserFaceDetails(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { entityId } = req.user!;
+            const { userId } = req.params;
+            if (!entityId || !userId) {
+                res.status(400).json({
+                    message: 'Entity ID and User ID are required'
+                });
+                return;
+            }
+            const userFace = await UserFace.findOne({ UserId: userId, EId: entityId }).populate('UserId', '_id Name Del').exec();
+            if (!userFace || userFace.UserId.Del) {
+                res.status(404).json({
+                    message: 'User face not found'
+                });
+                return;
+            }
+            res.status(200).json({
+                userId: userFace.UserId._id,
+                name: userFace.UserId.Name
+            });
+        } catch (error) {
+            console.error('Error getting user details:', error);
+            res.status(500).json({
+                message: 'Internal server error while fetching user details'
             });
         }
     }
