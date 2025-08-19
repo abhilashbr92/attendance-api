@@ -11,7 +11,6 @@ export interface FaceRecognitionResult {
     name: string;
     distance: number;
     confidence: number;
-    imgUrl: string;
     imgName: string;
 }
 let s3Client: any;
@@ -209,8 +208,7 @@ export class UserFaceController {
                             name: userFace.UserId.Name,
                             distance: distance,
                             confidence: confidence,
-                            imgName: userFace.ImgName,
-                            imgUrl: ''
+                            imgName: userFace.ImgName
                         };
                     }
                 }
